@@ -9,7 +9,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  output: 'standalone',
+  // Removed standalone for better env var support in production
 }
 
 export default nextConfig
