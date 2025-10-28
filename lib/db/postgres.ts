@@ -4,8 +4,18 @@ let pool: Pool | null = null
 
 export function getPool() {
   if (!pool) {
+    const databaseUrl = process.env.DATABASE_URL
+    
+    // Debug logging
+    console.log('DATABASE_URL exists:', !!databaseUrl)
+    console.log('DATABASE_URL length:', databaseUrl?.length || 0)
+    
+    if (!databaseUrl) {
+      throw new Error('DATABASE_URL is not defined in environment variables')
+    }
+    
     pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
+      connectionString: databaseUrl,
       max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 2000,

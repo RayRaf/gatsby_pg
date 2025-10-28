@@ -33,11 +33,12 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Accept build arguments
+# Accept build arguments (but DATABASE_URL will be runtime-only for security)
 ARG NEXT_PUBLIC_APP_URL
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 
 # Build the application
+# Note: DATABASE_URL is NOT set here for security - it will be set at runtime
 RUN npm run build
 
 # Production image
