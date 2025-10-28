@@ -25,11 +25,14 @@ services:
       context: .
       dockerfile: Dockerfile
       target: runner
+      args:
+        - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
     container_name: gatsby-app-prod
     restart: always
     environment:
       - NODE_ENV=production
       - DATABASE_URL=${DATABASE_URL:-postgresql://gatsby_user:gatsby_password@postgres:5432/gatsby_db}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
     ports:
       - "${APP_PORT:-3000}:3000"
     depends_on:
