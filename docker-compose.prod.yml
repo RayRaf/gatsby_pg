@@ -1,0 +1,46 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: gatsby-postgres-prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-gatsby_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gatsby_password}
+      POSTGRES_DB: ${POSTGRES_DB:-gatsby_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/001_init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gatsby_user} -d ${POSTGRES_DB:-gatsby_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gatsby-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: gatsby-app-prod
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL:-postgresql://gatsby_user:gatsby_password@postgres:5432/gatsby_db}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - gatsby-network
+
+volumes:
+  postgres_data_prod:
+
+networks:
+  gatsby-network:
+    driver: bridge
