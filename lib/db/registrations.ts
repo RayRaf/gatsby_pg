@@ -14,14 +14,14 @@ export const registrations = {
   // Get all registrations
   async getAll(): Promise<Registration[]> {
     return queryAll(
-      'SELECT * FROM registrations ORDER BY created_at ASC'
+      'SELECT * FROM public.registrations ORDER BY created_at ASC'
     )
   },
 
   // Get registration by cookie_id
   async getByCookieId(cookieId: string): Promise<Registration | null> {
     return queryOne(
-      'SELECT * FROM registrations WHERE cookie_id = $1',
+      'SELECT * FROM public.registrations WHERE cookie_id = $1',
       [cookieId]
     )
   },
@@ -34,7 +34,7 @@ export const registrations = {
     cookie_id: string
   }): Promise<Registration> {
     const result = await queryOne(
-      `INSERT INTO registrations (name, drinks, individual_wishes, cookie_id)
+      `INSERT INTO public.registrations (name, drinks, individual_wishes, cookie_id)
        VALUES ($1, $2, $3, $4)
        RETURNING *`,
       [data.name, data.drinks, data.individual_wishes || null, data.cookie_id]
@@ -52,7 +52,7 @@ export const registrations = {
     }
   ): Promise<Registration | null> {
     const result = await queryOne(
-      `UPDATE registrations 
+      `UPDATE public.registrations 
        SET name = $1, drinks = $2, individual_wishes = $3, updated_at = CURRENT_TIMESTAMP
        WHERE cookie_id = $4
        RETURNING *`,
@@ -64,7 +64,7 @@ export const registrations = {
   // Delete registration by cookie_id
   async delete(cookieId: string): Promise<boolean> {
     const result = await query(
-      'DELETE FROM registrations WHERE cookie_id = $1',
+      'DELETE FROM public.registrations WHERE cookie_id = $1',
       [cookieId]
     )
     return (result.rowCount || 0) > 0

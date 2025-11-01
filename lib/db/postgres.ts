@@ -19,6 +19,8 @@ export function getPool() {
       max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 2000,
+      // Ensure we're using the public schema
+      options: '-c search_path=public',
     })
   }
   return pool
