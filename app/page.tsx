@@ -143,6 +143,7 @@ function ConfirmationModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            name: name.trim(),
             drinks: selectedDrinks,
             individual_wishes: wishes.trim(),
           }),
@@ -259,7 +260,6 @@ function ConfirmationModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
               onChange={(e) => setName(e.target.value)}
               placeholder="Введите ваше имя"
               className="w-full"
-              disabled={isExistingUser}
             />
           </div>
 
@@ -590,6 +590,9 @@ export default function GatsbyInvitation() {
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false)
   const [isImageModalOpen, setIsImageModalOpen] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [isRegistered, setIsRegistered] = useState(false)
+  const [userName, setUserName] = useState("")
+  const [isCheckingRegistration, setIsCheckingRegistration] = useState(true)
 
   const dressCodeImages = [
     {
@@ -632,10 +635,96 @@ export default function GatsbyInvitation() {
     setCurrentImageIndex((prev) => (prev - 1 + dressCodeImages.length) % dressCodeImages.length)
   }
 
+  // Check registration status on mount
+  useEffect(() => {
+    const checkRegistration = async () => {
+      try {
+        const userCookie = document.cookie.split("; ").find((row) => row.startsWith("gatsby-user-id="))
+        
+        if (userCookie) {
+          const cookieValue = userCookie.split("=")[1]
+          const response = await fetch(`/api/registrations/${cookieValue}`)
+          
+          if (response.ok) {
+            const data = await response.json()
+            setIsRegistered(true)
+            setUserName(data.name)
+          }
+        }
+      } catch (error) {
+        console.error("Ошибка при проверке регистрации:", error)
+      } finally {
+        setIsCheckingRegistration(false)
+      }
+    }
+
+    checkRegistration()
+  }, [])
+
+  // Handle modal close and recheck registration
+  const handleModalClose = () => {
+    setIsConfirmationModalOpen(false)
+    // Recheck registration after modal closes
+    setTimeout(async () => {
+      try {
+        const userCookie = document.cookie.split("; ").find((row) => row.startsWith("gatsby-user-id="))
+        
+        if (userCookie) {
+          const cookieValue = userCookie.split("=")[1]
+          const response = await fetch(`/api/registrations/${cookieValue}`)
+          
+          if (response.ok) {
+            const data = await response.json()
+            setIsRegistered(true)
+            setUserName(data.name)
+          } else {
+            setIsRegistered(false)
+            setUserName("")
+          }
+        } else {
+          setIsRegistered(false)
+          setUserName("")
+        }
+      } catch (error) {
+        console.error("Ошибка при проверке регистрации:", error)
+      }
+    }, 500)
+  }
+
+  // Handle cancellation
+  const handleCancelRegistration = async () => {
+    if (!confirm("Вы уверены, что хотите отменить регистрацию?")) {
+      return
+    }
+
+    try {
+      const userCookie = document.cookie.split("; ").find((row) => row.startsWith("gatsby-user-id="))
+      
+      if (userCookie) {
+        const cookieValue = userCookie.split("=")[1]
+        const response = await fetch(`/api/registrations/${cookieValue}`, {
+          method: 'DELETE',
+        })
+
+        if (response.ok) {
+          document.cookie = `gatsby-user-id=; path=/; max-age=0`
+          setIsRegistered(false)
+          setUserName("")
+          alert("Регистрация успешно отменена")
+        } else {
+          alert("Ошибка при отмене регистрации")
+        }
+      }
+    } catch (error) {
+      console.error("Ошибка при отмене регистрации:", error)
+      alert("Ошибка при отмене регистрации")
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <GoldenRain />
-      <ConfirmationModal isOpen={isConfirmationModalOpen} onClose={() => setIsConfirmationModalOpen(false)} />
+      <ConfirmationModal isOpen={isConfirmationModalOpen} onClose={handleModalClose} />
       <ImageModal
         isOpen={isImageModalOpen}
         onClose={() => setIsImageModalOpen(false)}
@@ -808,13 +897,50 @@ export default function GatsbyInvitation() {
                 </div>
               </div>
 
-              <Button
-                size="lg"
-                onClick={() => setIsConfirmationModalOpen(true)}
-                className="text-xl px-12 py-6 bg-primary hover:bg-primary/90 text-primary-foreground font-bold vintage-glow"
-              >
-                Подтвердить участие
-              </Button>
+              {isCheckingRegistration ? (
+                <div className="py-4">
+                  <p className="text-muted-foreground">Проверка регистрации...</p>
+                </div>
+              ) : isRegistered ? (
+                <div className="space-y-4">
+                  <div className="p-6 bg-primary/10 rounded-lg border-2 border-primary/30 vintage-glow">
+                    <div className="flex items-center justify-center gap-3 mb-2">
+                      <span className="text-3xl">✨</span>
+                      <h3 className="text-2xl font-bold text-primary">Поздравляем!</h3>
+                      <span className="text-3xl">✨</span>
+                    </div>
+                    <p className="text-lg font-semibold text-foreground">
+                      {userName}, вы зарегистрированы на мероприятие
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <Button
+                      size="lg"
+                      onClick={() => setIsConfirmationModalOpen(true)}
+                      className="flex-1 text-lg px-8 py-6 bg-primary hover:bg-primary/90 text-primary-foreground font-bold vintage-glow"
+                    >
+                      Изменить пожелания
+                    </Button>
+                    <Button
+                      size="lg"
+                      onClick={handleCancelRegistration}
+                      variant="destructive"
+                      className="flex-1 text-lg px-8 py-6 font-bold"
+                    >
+                      Отменить регистрацию
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  size="lg"
+                  onClick={() => setIsConfirmationModalOpen(true)}
+                  className="text-xl px-12 py-6 bg-primary hover:bg-primary/90 text-primary-foreground font-bold vintage-glow"
+                >
+                  Подтвердить участие
+                </Button>
+              )}
 
               <p className="mt-8 text-sm text-muted-foreground italic">
                 &quot;Она танцевала так, будто мир принадлежал ей одной.&quot; — Зельда Фицджеральд

@@ -46,16 +46,17 @@ export const registrations = {
   async update(
     cookieId: string,
     data: {
+      name?: string
       drinks: string[]
       individual_wishes?: string
     }
   ): Promise<Registration | null> {
     const result = await queryOne(
       `UPDATE registrations 
-       SET drinks = $1, individual_wishes = $2
-       WHERE cookie_id = $3
+       SET name = $1, drinks = $2, individual_wishes = $3, updated_at = CURRENT_TIMESTAMP
+       WHERE cookie_id = $4
        RETURNING *`,
-      [data.drinks, data.individual_wishes || null, cookieId]
+      [data.name, data.drinks, data.individual_wishes || null, cookieId]
     )
     return result
   },

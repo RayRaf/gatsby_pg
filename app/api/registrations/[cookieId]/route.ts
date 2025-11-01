@@ -33,9 +33,10 @@ export async function PUT(
 ) {
   try {
     const body = await request.json()
-    const { drinks, individual_wishes } = body
+    const { name, drinks, individual_wishes } = body
 
     const registration = await registrations.update(params.cookieId, {
+      name,
       drinks,
       individual_wishes,
     })
